@@ -7,6 +7,7 @@ import java.awt.image.DataBufferInt
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sqrt
 import kotlin.random.Random
 
 
@@ -18,11 +19,19 @@ class Renderer(private val width: Int,
     private val pixels = IntArray(width * height) { initialColour.rawValue }
 
     fun drawModel(model: WavefrontObject) {
+        val lightDirection = Point3(0, 0, -1)
         model.faces.forEach { face ->
-            drawFilledTriangle(face.vertex1.toScreen(width, height),
-                    face.vertex2.toScreen(width, height),
-                    face.vertex3.toScreen(width, height),
-                    Colour.random())
+            val world1 = face.vertex1.toPoint()
+            val world2 = face.vertex2.toPoint()
+            val world3 = face.vertex3.toPoint()
+            val normal = (world3 - world1).cross(world2 - world1).normalise()
+            val intensity = normal.dot(lightDirection)
+            if (intensity > 0) {
+                drawFilledTriangle(face.vertex1.toScreen(width, height),
+                        face.vertex2.toScreen(width, height),
+                        face.vertex3.toScreen(width, height),
+                        Colour((255 * intensity).toInt(), (255 * intensity).toInt(), (255 * intensity).toInt()))
+            }
         }
     }
 
@@ -60,16 +69,14 @@ class Renderer(private val width: Int,
     }
 
     private fun barycentric(point1: Point2, point2: Point2, point3: Point2, testPoint: Point2): Point3 {
-        val u = cross(Point3(point3.x - point1.x, point2.x - point1.x, point1.x - testPoint.x),
-                Point3(point3.y - point1.y, point2.y - point1.y, point1.y - testPoint.y))
+        val u = Point3(point3.x - point1.x, point2.x - point1.x, point1.x - testPoint.x)
+                .cross(Point3(point3.y - point1.y, point2.y - point1.y, point1.y - testPoint.y))
         return if (abs(u.z) < 1) {
             Point3(-1.0, 1.0, 1.0)
         } else {
             Point3(1.0 - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z)
         }
     }
-
-    private fun cross(v1: Point3, v2: Point3) = Point3(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x)
 
     fun drawLine(start: Point2, end: Point2, colour: Colour) {
         val steep = abs(start.x - end.x) < abs(start.y - end.y)
@@ -151,6 +158,11 @@ enum class Origin {
 }
 
 class Colour(val rawValue: Int) {
+    constructor(red: Int, green: Int, blue: Int) : this(
+            red.shl(16).and(0xFF0000)
+                    + green.shl(8).and(0xFF00)
+                    + blue.and(0xFF))
+
     companion object {
         val WHITE = Colour(0xFFFFFF)
         val RED = Colour(0xFF0000)
@@ -174,5 +186,22 @@ data class Point2(val x: Double, val y: Double) {
 }
 
 data class Point3(val x: Double, val y: Double, val z: Double) {
+    constructor(x: Number, y: Number, z: Number) : this(x.toDouble(), y.toDouble(), z.toDouble())
+
     fun toScreen(width: Int, height: Int) = Point2((x + 1.0) * width / 2, (y + 1.0) * height / 2)
+
+    fun cross(v: Point3) = Point3(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x)
+
+    fun dot(v: Point3) = x * v.x + y * v.y + z * v.z
+
+    operator fun minus(v: Point3) = Point3(x - v.x, y - v.y, z - v.z)
+
+    operator fun times(v: Point3) = Point3(x * v.x, y * v.y, z * v.z)
+
+    fun magnitude() = sqrt(x * x + y * y + z * z)
+
+    fun normalise(): Point3 {
+        val l = 1.0 / magnitude()
+        return Point3(x * l, y * l, z * l)
+    }
 }

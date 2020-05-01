@@ -13,7 +13,7 @@ import javax.swing.JLabel
 class App {
 
     fun showExample() {
-        val renderer = Renderer(200, 200, BLACK, BOTTOM_LEFT)
+        val renderer = Renderer(512, 512, BLACK, BOTTOM_LEFT)
 
         val model = WavefrontObjectParser().parse(pathOf("/african_head.obj"))
         renderer.drawModel(model)
