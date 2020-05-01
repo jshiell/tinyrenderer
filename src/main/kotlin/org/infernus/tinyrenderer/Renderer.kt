@@ -30,6 +30,12 @@ class Renderer(private val width: Int,
     }
 
     fun drawTriangle(point1: Point2, point2: Point2, point3: Point2, colour: Colour) {
+        drawLine(point1, point2, colour)
+        drawLine(point2, point3, colour)
+        drawLine(point3, point1, colour)
+    }
+
+    fun drawFilledTriangle(point1: Point2, point2: Point2, point3: Point2, colour: Colour) {
         val vertices = listOf(point1, point2, point3).sortedBy { it.y }
         val totalHeight = vertices[2].y - vertices[0].y
 
@@ -79,9 +85,8 @@ class Renderer(private val width: Int,
         val deltaY = y1 - y0
         val deltaError = abs(deltaY) * 2
         var error = 0
-        var x = x0
         var y = y0
-        while (x <= x1) {
+        for (x in x0..x1) {
             if (steep) {
                 setPixel(y, x, colour)
             } else {
@@ -92,7 +97,6 @@ class Renderer(private val width: Int,
                 y += if (y1 > y0) 1 else -1
                 error -= deltaX * 2
             }
-            x += 1
         }
     }
 
