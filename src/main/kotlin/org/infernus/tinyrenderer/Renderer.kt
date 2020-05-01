@@ -3,20 +3,14 @@ package org.infernus.tinyrenderer
 import org.infernus.tinyrenderer.Colour.BLACK
 import org.infernus.tinyrenderer.Colour.WHITE
 import org.infernus.tinyrenderer.Origin.*
-import java.awt.FlowLayout
 import java.awt.image.BufferedImage
 import java.awt.image.DataBufferInt
-import java.nio.file.Path
-import javax.swing.ImageIcon
-import javax.swing.JFrame
-import javax.swing.JLabel
 import kotlin.math.abs
 
-
-class TinyRenderer(private val width: Int,
-                   private val height: Int,
-                   private val initialColour: Colour = BLACK,
-                   private val origin: Origin = TOP_LEFT) {
+class Renderer(private val width: Int,
+               private val height: Int,
+               private val initialColour: Colour = BLACK,
+               private val origin: Origin = TOP_LEFT) {
 
     private val pixels = IntArray(width * height) { initialColour.rawValue }
 
@@ -117,28 +111,4 @@ enum class Colour(val rawValue: Int) {
     WHITE(0xFFFFFF),
     RED(0xFF0000),
     BLACK(0x000000)
-}
-
-fun main() {
-    val renderer = TinyRenderer(512, 512, BLACK, BOTTOM_LEFT)
-
-    val model = WavefrontObjectParser().parse(ClasspathPath.of("/african_head.obj"))
-    renderer.drawModel(model)
-
-    showImageInFrame(renderer.asBufferedImage())
-}
-
-object ClasspathPath {
-    fun of(classpathPath: String): Path = Path.of(ClasspathPath::class.java.getResource(classpathPath).toURI())
-}
-
-
-private fun showImageInFrame(image: BufferedImage) {
-    val frame = JFrame()
-    frame.title = "TinyRenderer"
-    frame.contentPane.layout = FlowLayout()
-    frame.contentPane.add(JLabel(ImageIcon(image)))
-    frame.pack()
-    frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-    frame.isVisible = true
 }

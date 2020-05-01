@@ -1,5 +1,5 @@
 import org.infernus.tinyrenderer.Face
-import org.infernus.tinyrenderer.TinyRenderer
+import org.infernus.tinyrenderer.Renderer
 import org.infernus.tinyrenderer.Vertex
 import org.infernus.tinyrenderer.WavefrontObjectParser
 import org.junit.Test
@@ -40,6 +40,6 @@ class WavefrontObjectTest {
     }
 
     companion object {
-        private val TEST_FILE = Path.of(TinyRenderer::class.java.getResource("/african_head.obj").toURI())
+        private val TEST_FILE = Path.of(Renderer::class.java.getResource("/african_head.obj").toURI())
     }
 }
