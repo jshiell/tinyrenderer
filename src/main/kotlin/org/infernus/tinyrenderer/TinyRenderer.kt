@@ -128,6 +128,7 @@ fun main() {
 
 private fun showImageInFrame(image: BufferedImage) {
     val frame = JFrame()
+    frame.title = "TinyRenderer"
     frame.contentPane.layout = FlowLayout()
     frame.contentPane.add(JLabel(ImageIcon(image)))
     frame.pack()
