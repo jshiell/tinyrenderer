@@ -9,9 +9,10 @@ import javax.swing.JLabel
 
 
 class TinyRenderer(private val width: Int,
-                   private val height: Int) {
+                   private val height: Int,
+                   private val initialColour: Colour = Colour.BLACK) {
 
-    private val pixels = IntArray(width * height)
+    private val pixels = IntArray(width * height) { initialColour.rawValue }
 
     fun drawLine(x0: Int, y0: Int, x1: Int, y1: Int, colour: Colour) {
         var t = 0.0f
@@ -34,12 +35,14 @@ class TinyRenderer(private val width: Int,
 }
 
 enum class Colour(val rawValue: Int) {
-    WHITE(0xFFFFFF)
+    WHITE(0xFFFFFF),
+    RED(0xFF0000),
+    BLACK(0x000000)
 }
 
 fun main() {
-    val renderer = TinyRenderer(100, 100)
-    renderer.drawLine(20, 20, 80, 70, Colour.WHITE)
+    val renderer = TinyRenderer(100, 100, Colour.WHITE)
+    renderer.drawLine(20, 20, 80, 70, Colour.RED)
 
     showImageInFrame(renderer.asBufferedImage())
 }
