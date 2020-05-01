@@ -5,6 +5,7 @@ import org.infernus.tinyrenderer.Origin.*
 import java.awt.FlowLayout
 import java.awt.image.BufferedImage
 import java.awt.image.DataBufferInt
+import java.nio.file.Path
 import javax.swing.ImageIcon
 import javax.swing.JFrame
 import javax.swing.JLabel
@@ -38,15 +39,15 @@ class TinyRenderer(private val width: Int,
 
         val deltaX = x1 - x0
         val deltaY = y1 - y0
-        val deltaError = abs(deltaY)  * 2
+        val deltaError = abs(deltaY) * 2
         var error = 0
         var x = x0
         var y = y0
         while (x <= x1) {
             if (steep) {
-                pixels[y + x * width] = colour.rawValue
+                setPixel(y, x, colour)
             } else {
-                pixels[x + y * width] = colour.rawValue
+                setPixel(x, y, colour)
             }
             error += deltaError
             if (error > deltaX) {
@@ -54,6 +55,13 @@ class TinyRenderer(private val width: Int,
                 error -= deltaX * 2
             }
             x += 1
+        }
+    }
+
+    private fun setPixel(x: Int, y: Int, colour: Colour) {
+        val offset = x + y * width
+        if (offset >= 0 && offset < pixels.size) {
+            pixels[offset] = colour.rawValue
         }
     }
 
@@ -99,11 +107,21 @@ enum class Colour(val rawValue: Int) {
 }
 
 fun main() {
-    val renderer = TinyRenderer(100, 100, BLACK, BOTTOM_LEFT)
+    val width = 512
+    val height = 512
+    val renderer = TinyRenderer(width, height, BLACK, BOTTOM_LEFT)
 
-    renderer.drawLine(13, 20, 80, 40, WHITE)
-    renderer.drawLine(20, 13, 40, 80, RED)
-    renderer.drawLine(80, 40, 13, 20, RED)
+    val model = WavefrontObjectParser().parse(Path.of(TinyRenderer::class.java.getResource("/african_head.obj").toURI()))
+
+    model.faces.forEach { face ->
+        face.lines().forEach { (start, end) ->
+            val startX = (start.x + 1) * width / 2
+            val startY = (start.y + 1) * height / 2
+            val endX = (end.x + 1) * width / 2
+            val endY = (end.y + 1) * height / 2
+            renderer.drawLine(startX.toInt(), startY.toInt(), endX.toInt(), endY.toInt(), WHITE)
+        }
+    }
 
     showImageInFrame(renderer.asBufferedImage())
 }
