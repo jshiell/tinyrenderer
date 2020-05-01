@@ -8,6 +8,7 @@ import java.awt.image.DataBufferInt
 import javax.swing.ImageIcon
 import javax.swing.JFrame
 import javax.swing.JLabel
+import kotlin.math.abs
 
 
 class TinyRenderer(private val width: Int,
@@ -17,12 +18,33 @@ class TinyRenderer(private val width: Int,
 
     private val pixels = IntArray(width * height) { initialColour.rawValue }
 
-    fun drawLine(x0: Int, y0: Int, x1: Int, y1: Int, colour: Colour) {
+    fun drawLine(fromX: Int, fromY: Int, toX: Int, toY: Int, colour: Colour) {
+        val steep = abs(fromX - toX) < abs(fromY - toY)
+
+        var x0 = if (steep) fromY else fromX
+        var y0 = if (steep) fromX else fromY
+        var x1 = if (steep) toY else toX
+        var y1 = if (steep) toX else toY
+
+        val leftToRight = x0 > x1
+        if (leftToRight) {
+            var tempCopy = x0
+            x0 = x1
+            x1 = tempCopy
+            tempCopy = y0
+            y0 = y1
+            y1 = tempCopy
+        }
+
         var x = x0
         while (x <= x1) {
             val t = (x - x0).toFloat() / (x1 - x0).toFloat()
             val y = (y0 * (1f - t) + y1 * t).toInt()
-            pixels[x + y * width] = colour.rawValue
+            if (steep) {
+                pixels[x + y * width] = colour.rawValue
+            } else {
+                pixels[y + x * width] = colour.rawValue
+            }
             x += 1
         }
     }
