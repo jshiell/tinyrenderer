@@ -1,13 +1,13 @@
 package org.infernus.tinyrenderer
 
-import org.infernus.tinyrenderer.Colour.BLACK
-import org.infernus.tinyrenderer.Colour.WHITE
+import org.infernus.tinyrenderer.Colour.Companion.BLACK
 import org.infernus.tinyrenderer.Origin.*
 import java.awt.image.BufferedImage
 import java.awt.image.DataBufferInt
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.random.Random
 
 
 class Renderer(private val width: Int,
@@ -19,13 +19,10 @@ class Renderer(private val width: Int,
 
     fun drawModel(model: WavefrontObject) {
         model.faces.forEach { face ->
-            face.lines().forEach { (start, end) ->
-                val startX = (start.x.toDouble() + 1) * width / 2
-                val startY = (start.y.toDouble() + 1) * height / 2
-                val endX = (end.x.toDouble() + 1) * width / 2
-                val endY = (end.y.toDouble() + 1) * height / 2
-                drawLine(Point2(startX, startY), Point2(endX, endY), WHITE)
-            }
+            drawFilledTriangle(face.vertex1.toScreen(width, height),
+                    face.vertex2.toScreen(width, height),
+                    face.vertex3.toScreen(width, height),
+                    Colour.random())
         }
     }
 
@@ -153,11 +150,15 @@ enum class Origin {
     BOTTOM_RIGHT
 }
 
-enum class Colour(val rawValue: Int) {
-    WHITE(0xFFFFFF),
-    RED(0xFF0000),
-    GREEN(0x00FF00),
-    BLACK(0x000000)
+class Colour(val rawValue: Int) {
+    companion object {
+        val WHITE = Colour(0xFFFFFF)
+        val RED = Colour(0xFF0000)
+        val GREEN = Colour(0x00FF00)
+        val BLACK = Colour(0x000000)
+
+        fun random() = Colour(Random.nextInt())
+    }
 }
 
 data class Rectangle(val fromX: Int, val fromY: Int, val toX: Int, val toY: Int)
@@ -172,4 +173,6 @@ data class Point2(val x: Double, val y: Double) {
     operator fun times(v: Double) = Point2(x * v, y * v)
 }
 
-data class Point3(val x: Double, val y: Double, val z: Double)
+data class Point3(val x: Double, val y: Double, val z: Double) {
+    fun toScreen(width: Int, height: Int) = Point2((x + 1.0) * width / 2, (y + 1.0) * height / 2)
+}

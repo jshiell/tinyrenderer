@@ -1,6 +1,6 @@
 package org.infernus.tinyrenderer
 
-import org.infernus.tinyrenderer.Colour.BLACK
+import org.infernus.tinyrenderer.Colour.Companion.BLACK
 import org.infernus.tinyrenderer.Origin.BOTTOM_LEFT
 import java.awt.FlowLayout
 import java.awt.image.BufferedImage
@@ -15,12 +15,12 @@ class App {
     fun showExample() {
         val renderer = Renderer(200, 200, BLACK, BOTTOM_LEFT)
 
-//        val model = WavefrontObjectParser().parse(pathOf("/african_head.obj"))
-//        renderer.drawModel(model)
+        val model = WavefrontObjectParser().parse(pathOf("/african_head.obj"))
+        renderer.drawModel(model)
 
-        renderer.drawFilledTriangle(Point2(10, 70), Point2(50, 160), Point2(70, 80), Colour.RED)
-        renderer.drawFilledTriangle(Point2(180, 50), Point2(150, 1), Point2(70, 180), Colour.WHITE)
-        renderer.drawFilledTriangle(Point2(180, 150), Point2(120, 160), Point2(130, 180), Colour.GREEN)
+//        renderer.drawFilledTriangle(Point2(10, 70), Point2(50, 160), Point2(70, 80), Colour.RED)
+//        renderer.drawFilledTriangle(Point2(180, 50), Point2(150, 1), Point2(70, 180), Colour.WHITE)
+//        renderer.drawFilledTriangle(Point2(180, 150), Point2(120, 160), Point2(130, 180), Colour.GREEN)
 
         showImageInFrame(renderer.asBufferedImage())
     }

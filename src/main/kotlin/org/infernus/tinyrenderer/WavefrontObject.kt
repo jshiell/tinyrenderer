@@ -67,6 +67,8 @@ class WavefrontObjectParser {
 
 data class Vertex(val x: Double, val y: Double, val z: Double, val w: Double = 1.0) {
     fun toPoint() = Point3(x, y, z)
+
+    fun toScreen(width: Int, height: Int) = toPoint().toScreen(width, height)
 }
 
 data class Face(val vertex1: Vertex, val vertex2: Vertex, val vertex3: Vertex) {
