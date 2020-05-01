@@ -112,3 +112,5 @@ enum class Colour(val rawValue: Int) {
     RED(0xFF0000),
     BLACK(0x000000)
 }
+
+data class Point3(val x: Double, val y: Double, val z: Double)
