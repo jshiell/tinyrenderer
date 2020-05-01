@@ -6,6 +6,9 @@ import org.infernus.tinyrenderer.Origin.*
 import java.awt.image.BufferedImage
 import java.awt.image.DataBufferInt
 import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
+
 
 class Renderer(private val width: Int,
                private val height: Int,
@@ -21,15 +24,37 @@ class Renderer(private val width: Int,
                 val startY = (start.y.toDouble() + 1) * height / 2
                 val endX = (end.x.toDouble() + 1) * width / 2
                 val endY = (end.y.toDouble() + 1) * height / 2
-                drawLine(Point2(startX.toInt(), startY.toInt()), Point2(endX.toInt(), endY.toInt()), WHITE)
+                drawLine(Point2(startX, startY), Point2(endX, endY), WHITE)
             }
         }
     }
 
     fun drawTriangle(point1: Point2, point2: Point2, point3: Point2, colour: Colour) {
-        drawLine(point1, point2, colour)
-        drawLine(point2, point3, colour)
-        drawLine(point3, point1, colour)
+        val vertices = listOf(point1, point2, point3).sortedBy { it.y }
+        val totalHeight = vertices[2].y - vertices[0].y
+
+        val firstSegmentHeight = vertices[1].y - vertices[0].y + 1
+        for (y in vertices[0].y.toInt()..vertices[1].y.toInt()) {
+            val offset = (y - vertices[0].y).toFloat()
+            val first = vertices[0] + (vertices[2] - vertices[0]) * (offset / totalHeight)
+            val second = vertices[0] + (vertices[1] - vertices[0]) * (offset / firstSegmentHeight)
+            setPixel(first.x.toInt(), y, colour)
+            setPixel(second.x.toInt(), y, colour)
+
+            for (x in (min(first.x, second.x).toInt())..(max(first.x, second.x).toInt())) {
+                setPixel(x, y, colour)
+            }
+        }
+
+        val secondSegmentHeight = vertices[2].y - vertices[1].y + 1
+        for (y in (vertices[1].y.toInt() + 1)..vertices[2].y.toInt()) {
+            val first = vertices[0] + (vertices[2] - vertices[0]) * ((y - vertices[0].y).toFloat() / totalHeight)
+            val second = vertices[1] + (vertices[2] - vertices[1]) * ((y - vertices[1].y).toFloat() / secondSegmentHeight)
+
+            for (x in (min(first.x, second.x).toInt())..(max(first.x, second.x).toInt())) {
+                setPixel(x, y, colour)
+            }
+        }
     }
 
     fun drawLine(start: Point2, end: Point2, colour: Colour) {
@@ -120,6 +145,14 @@ enum class Colour(val rawValue: Int) {
     BLACK(0x000000)
 }
 
-data class Point2(val x: Int, val y: Int)
+data class Point2(val x: Double, val y: Double) {
+    constructor(x: Number, y: Number) : this(x.toDouble(), y.toDouble())
+
+    operator fun plus(v: Point2) = Point2(x + v.x, y + v.y)
+
+    operator fun minus(v: Point2) = Point2(x - v.x, y - v.y)
+
+    operator fun times(v: Double) = Point2(x * v, y * v)
+}
 
 data class Point3(val x: Double, val y: Double, val z: Double)
