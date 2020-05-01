@@ -1,5 +1,7 @@
 package org.infernus.tinyrenderer
 
+import org.infernus.tinyrenderer.Colour.*
+import org.infernus.tinyrenderer.Origin.*
 import java.awt.FlowLayout
 import java.awt.image.BufferedImage
 import java.awt.image.DataBufferInt
@@ -10,7 +12,8 @@ import javax.swing.JLabel
 
 class TinyRenderer(private val width: Int,
                    private val height: Int,
-                   private val initialColour: Colour = Colour.BLACK) {
+                   private val initialColour: Colour = BLACK,
+                   private val origin: Origin = TOP_LEFT) {
 
     private val pixels = IntArray(width * height) { initialColour.rawValue }
 
@@ -28,10 +31,35 @@ class TinyRenderer(private val width: Int,
         val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
         val imagePixels = (image.raster.dataBuffer as DataBufferInt).data
         IntRange(0, pixels.size - 1).forEach { index ->
-            imagePixels[index] = pixels[index]
+            val destinationIndex = when (origin) {
+                TOP_LEFT -> index
+                TOP_RIGHT -> {
+                    val yPos = index / width
+                    val xPos = width - (index % width) - 1
+                    yPos * width + xPos
+                }
+                BOTTOM_LEFT -> {
+                    val yPos = height - (index / width) - 1
+                    val xPos = index % width
+                    yPos * width + xPos
+                }
+                BOTTOM_RIGHT -> {
+                    val yPos = height - (index / width) - 1
+                    val xPos = width - (index % width) - 1
+                    yPos * width + xPos
+                }
+            }
+            imagePixels[destinationIndex] = pixels[index]
         }
         return image
     }
+}
+
+enum class Origin {
+    TOP_LEFT,
+    TOP_RIGHT,
+    BOTTOM_LEFT,
+    BOTTOM_RIGHT
 }
 
 enum class Colour(val rawValue: Int) {
@@ -41,8 +69,8 @@ enum class Colour(val rawValue: Int) {
 }
 
 fun main() {
-    val renderer = TinyRenderer(100, 100, Colour.WHITE)
-    renderer.drawLine(20, 20, 80, 70, Colour.RED)
+    val renderer = TinyRenderer(100, 100, WHITE, BOTTOM_LEFT)
+    renderer.drawLine(20, 20, 50, 50, RED)
 
     showImageInFrame(renderer.asBufferedImage())
 }
