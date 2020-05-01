@@ -78,7 +78,6 @@ class Renderer(private val width: Int,
         }
     }
 
-
     private fun setPixel(x: Int, y: Int, colour: Colour) {
         val offset = x + y * width
         if (offset >= 0 && offset < pixels.size) {
