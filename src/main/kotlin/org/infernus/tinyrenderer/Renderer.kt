@@ -36,26 +36,43 @@ class Renderer(private val width: Int,
     }
 
     fun drawFilledTriangle(point1: Point2, point2: Point2, point3: Point2, colour: Colour) {
-        val vertices = listOf(point1, point2, point3).sortedBy { it.y }
-        val totalHeight = vertices[2].y - vertices[0].y
+        val bounds = boundingBox(listOf(point1, point2, point3))
 
-        val firstSegmentHeight = vertices[1].y - vertices[0].y + 1
-        val secondSegmentHeight = vertices[2].y - vertices[1].y + 1
-
-        for (y in vertices[0].y.toInt()..vertices[2].y.toInt()) {
-            val offsetToTop = (y - vertices[0].y).toFloat()
-            val first = vertices[0] + (vertices[2] - vertices[0]) * (offsetToTop / totalHeight)
-            val second = if (y <= vertices[1].y) {
-                vertices[0] + (vertices[1] - vertices[0]) * (offsetToTop / firstSegmentHeight)
-            } else {
-                vertices[1] + (vertices[2] - vertices[1]) * ((y - vertices[1].y).toFloat() / secondSegmentHeight)
-            }
-
-            for (x in (min(first.x, second.x).toInt())..(max(first.x, second.x).toInt())) {
-                setPixel(x, y, colour)
+        for (x in (bounds.fromX..bounds.toX)) {
+            for (y in (bounds.fromY..bounds.toY)) {
+                val screen = barycentric(point1, point2, point3, Point2(x, y))
+                if (screen.x >= 0 && screen.y >= 0 && screen.z >= 0) {
+                    setPixel(x, y, colour)
+                }
             }
         }
     }
+
+    private fun boundingBox(points: List<Point2>): Rectangle {
+        var minX = width - 1
+        var minY = height - 1
+        var maxX = 0
+        var maxY = 0
+        points.forEach { point ->
+            minX = max(0, min(minX, point.x.toInt()))
+            minY = max(0, min(minY, point.y.toInt()))
+            maxX = min(width - 1, max(maxX, point.x.toInt()))
+            maxY = min(height - 1, max(maxY, point.y.toInt()))
+        }
+        return Rectangle(minX, minY, maxX, maxY)
+    }
+
+    private fun barycentric(point1: Point2, point2: Point2, point3: Point2, testPoint: Point2): Point3 {
+        val u = cross(Point3(point3.x - point1.x, point2.x - point1.x, point1.x - testPoint.x),
+                Point3(point3.y - point1.y, point2.y - point1.y, point1.y - testPoint.y))
+        return if (abs(u.z) < 1) {
+            Point3(-1.0, 1.0, 1.0)
+        } else {
+            Point3(1.0 - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z)
+        }
+    }
+
+    private fun cross(v1: Point3, v2: Point3) = Point3(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z, v1.x * v2.y - v1.y * v2.x)
 
     fun drawLine(start: Point2, end: Point2, colour: Colour) {
         val steep = abs(start.x - end.x) < abs(start.y - end.y)
@@ -142,6 +159,8 @@ enum class Colour(val rawValue: Int) {
     GREEN(0x00FF00),
     BLACK(0x000000)
 }
+
+data class Rectangle(val fromX: Int, val fromY: Int, val toX: Int, val toY: Int)
 
 data class Point2(val x: Double, val y: Double) {
     constructor(x: Number, y: Number) : this(x.toDouble(), y.toDouble())
