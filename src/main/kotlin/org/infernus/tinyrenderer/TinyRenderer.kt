@@ -18,12 +18,12 @@ class TinyRenderer(private val width: Int,
     private val pixels = IntArray(width * height) { initialColour.rawValue }
 
     fun drawLine(x0: Int, y0: Int, x1: Int, y1: Int, colour: Colour) {
-        var t = 0.0f
-        while (t < 1.0) {
-            val x = (x0 + (x1 - x0) * t).toInt()
-            val y = (y0 + (y1 - y0) * t).toInt()
+        var x = x0
+        while (x <= x1) {
+            val t = (x - x0).toFloat() / (x1 - x0).toFloat()
+            val y = (y0 * (1f - t) + y1 * t).toInt()
             pixels[x + y * width] = colour.rawValue
-            t += .01f
+            x += 1
         }
     }
 
@@ -69,8 +69,11 @@ enum class Colour(val rawValue: Int) {
 }
 
 fun main() {
-    val renderer = TinyRenderer(100, 100, WHITE, BOTTOM_LEFT)
-    renderer.drawLine(20, 20, 50, 50, RED)
+    val renderer = TinyRenderer(100, 100, BLACK, BOTTOM_LEFT)
+
+    renderer.drawLine(13, 20, 80, 40, WHITE)
+    renderer.drawLine(20, 13, 40, 80, RED)
+    renderer.drawLine(80, 40, 13, 20, RED)
 
     showImageInFrame(renderer.asBufferedImage())
 }
