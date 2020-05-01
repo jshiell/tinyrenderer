@@ -17,13 +17,19 @@ class Renderer(private val width: Int,
     fun drawModel(model: WavefrontObject) {
         model.faces.forEach { face ->
             face.lines().forEach { (start, end) ->
-                val startX = (start.x + 1) * width / 2
-                val startY = (start.y + 1) * height / 2
-                val endX = (end.x + 1) * width / 2
-                val endY = (end.y + 1) * height / 2
-                drawLine(Point2(startX, startY), Point2(endX, endY), WHITE)
+                val startX = (start.x.toDouble() + 1) * width / 2
+                val startY = (start.y.toDouble() + 1) * height / 2
+                val endX = (end.x.toDouble() + 1) * width / 2
+                val endY = (end.y.toDouble() + 1) * height / 2
+                drawLine(Point2(startX.toInt(), startY.toInt()), Point2(endX.toInt(), endY.toInt()), WHITE)
             }
         }
+    }
+
+    fun drawTriangle(point1: Point2, point2: Point2, point3: Point2, colour: Colour) {
+        drawLine(point1, point2, colour)
+        drawLine(point2, point3, colour)
+        drawLine(point3, point1, colour)
     }
 
     fun drawLine(start: Point2, end: Point2, colour: Colour) {
@@ -110,9 +116,10 @@ enum class Origin {
 enum class Colour(val rawValue: Int) {
     WHITE(0xFFFFFF),
     RED(0xFF0000),
+    GREEN(0x00FF00),
     BLACK(0x000000)
 }
 
-data class Point2(val x: Double, val y: Double)
+data class Point2(val x: Int, val y: Int)
 
 data class Point3(val x: Double, val y: Double, val z: Double)
