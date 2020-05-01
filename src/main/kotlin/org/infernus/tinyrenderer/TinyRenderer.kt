@@ -38,8 +38,8 @@ class TinyRenderer(private val width: Int,
 
         val deltaX = x1 - x0
         val deltaY = y1 - y0
-        val deltaError = abs(deltaY / deltaX.toFloat())
-        var error = 0f
+        val deltaError = abs(deltaY)  * 2
+        var error = 0
         var x = x0
         var y = y0
         while (x <= x1) {
@@ -49,9 +49,9 @@ class TinyRenderer(private val width: Int,
                 pixels[x + y * width] = colour.rawValue
             }
             error += deltaError
-            if (error > 0.5) {
+            if (error > deltaX) {
                 y += if (y1 > y0) 1 else -1
-                error -= 1
+                error -= deltaX * 2
             }
             x += 1
         }
