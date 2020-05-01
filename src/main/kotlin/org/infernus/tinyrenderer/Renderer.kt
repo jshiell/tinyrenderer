@@ -21,18 +21,18 @@ class Renderer(private val width: Int,
                 val startY = (start.y + 1) * height / 2
                 val endX = (end.x + 1) * width / 2
                 val endY = (end.y + 1) * height / 2
-                drawLine(startX.toInt(), startY.toInt(), endX.toInt(), endY.toInt(), WHITE)
+                drawLine(Point2(startX, startY), Point2(endX, endY), WHITE)
             }
         }
     }
 
-    fun drawLine(fromX: Int, fromY: Int, toX: Int, toY: Int, colour: Colour) {
-        val steep = abs(fromX - toX) < abs(fromY - toY)
+    fun drawLine(start: Point2, end: Point2, colour: Colour) {
+        val steep = abs(start.x - end.x) < abs(start.y - end.y)
 
-        var x0 = if (steep) fromY else fromX
-        var y0 = if (steep) fromX else fromY
-        var x1 = if (steep) toY else toX
-        var y1 = if (steep) toX else toY
+        var x0 = (if (steep) start.y else start.x).toInt()
+        var y0 = (if (steep) start.x else start.y).toInt()
+        var x1 = (if (steep) end.y else end.x).toInt()
+        var y1 = (if (steep) end.x else end.y).toInt()
 
         val leftToRight = x0 > x1
         if (leftToRight) {
@@ -112,5 +112,7 @@ enum class Colour(val rawValue: Int) {
     RED(0xFF0000),
     BLACK(0x000000)
 }
+
+data class Point2(val x: Double, val y: Double)
 
 data class Point3(val x: Double, val y: Double, val z: Double)
