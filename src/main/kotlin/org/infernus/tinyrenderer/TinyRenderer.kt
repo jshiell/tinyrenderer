@@ -44,9 +44,9 @@ class TinyRenderer(private val width: Int,
         var y = y0
         while (x <= x1) {
             if (steep) {
-                pixels[x + y * width] = colour.rawValue
-            } else {
                 pixels[y + x * width] = colour.rawValue
+            } else {
+                pixels[x + y * width] = colour.rawValue
             }
             error += deltaError
             if (error > 0.5) {
