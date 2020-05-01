@@ -16,38 +16,45 @@ class Renderer(private val width: Int,
                private val origin: Origin = TOP_LEFT) {
 
     private val pixels = IntArray(width * height) { initialColour.rawValue }
+    private val zBuffer = IntArray(width * height) { Integer.MIN_VALUE }
 
     fun drawModel(model: WavefrontObject) {
-        val lightDirection = Point3(0, 0, -1)
+        val lightDirection = Vector3(0, 0, -1)
         model.faces.forEach { face ->
-            val world1 = face.vertex1.toPoint()
-            val world2 = face.vertex2.toPoint()
-            val world3 = face.vertex3.toPoint()
-            val normal = (world3 - world1).cross(world2 - world1).normalise()
+            val world1 = face.vertex1.toVector3()
+            val normal = (face.vertex3.toVector3() - world1)
+                    .cross(face.vertex2.toVector3() - world1).normalise()
             val intensity = normal.dot(lightDirection)
             if (intensity > 0) {
-                drawFilledTriangle(face.vertex1.toScreen(width, height),
-                        face.vertex2.toScreen(width, height),
-                        face.vertex3.toScreen(width, height),
+                renderTriangle(
+                        face.vertex1.toScreen(),
+                        face.vertex2.toScreen(),
+                        face.vertex3.toScreen(),
                         Colour((255 * intensity).toInt(), (255 * intensity).toInt(), (255 * intensity).toInt()))
             }
         }
     }
 
-    fun drawFilledTriangle(point1: Point2, point2: Point2, point3: Point2, colour: Colour) {
+    private fun Vertex.toScreen(): Vector3 = Vector3((x + 1.0) * width / 2.0, (y + 1.0) * height / 2.0, z)
+
+    private fun renderTriangle(point1: Vector3, point2: Vector3, point3: Vector3, colour: Colour) {
         val bounds = boundingBox(listOf(point1, point2, point3))
 
         for (x in (bounds.fromX..bounds.toX)) {
             for (y in (bounds.fromY..bounds.toY)) {
-                val screen = barycentric(point1, point2, point3, Point2(x, y))
+                val screen = barycentric(point1, point2, point3, Vector3(x, y, 0))
                 if (screen.x >= 0 && screen.y >= 0 && screen.z >= 0) {
-                    setPixel(x, y, colour)
+                    val z = (point1.z * screen.x + point2.z * screen.y + point3.z * screen.x).toInt()
+                    if (zBuffer[x + y * width] < z) {
+                        zBuffer[x + y * width] = z
+                        setPixel(x, y, colour)
+                    }
                 }
             }
         }
     }
 
-    private fun boundingBox(points: List<Point2>): Rectangle {
+    private fun boundingBox(points: List<Vector3>): Rectangle {
         var minX = width - 1
         var minY = height - 1
         var maxX = 0
@@ -61,13 +68,13 @@ class Renderer(private val width: Int,
         return Rectangle(minX, minY, maxX, maxY)
     }
 
-    private fun barycentric(point1: Point2, point2: Point2, point3: Point2, testPoint: Point2): Point3 {
-        val u = Point3(point3.x - point1.x, point2.x - point1.x, point1.x - testPoint.x)
-                .cross(Point3(point3.y - point1.y, point2.y - point1.y, point1.y - testPoint.y))
-        return if (abs(u.z) < 1) {
-            Point3(-1.0, 1.0, 1.0)
+    private fun barycentric(point1: Vector3, point2: Vector3, point3: Vector3, testPoint: Vector3): Vector3 {
+        val u = Vector3(point3.x - point1.x, point2.x - point1.x, point1.x - testPoint.x)
+                .cross(Vector3(point3.y - point1.y, point2.y - point1.y, point1.y - testPoint.y))
+        return if (abs(u.z) > 0.01) {
+            Vector3(1.0 - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z)
         } else {
-            Point3(1.0 - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z)
+            Vector3(-1.0, 1.0, 1.0)
         }
     }
 
@@ -127,33 +134,21 @@ class Colour(val rawValue: Int) {
 
 data class Rectangle(val fromX: Int, val fromY: Int, val toX: Int, val toY: Int)
 
-data class Point2(val x: Double, val y: Double) {
-    constructor(x: Number, y: Number) : this(x.toDouble(), y.toDouble())
-
-    operator fun plus(v: Point2) = Point2(x + v.x, y + v.y)
-
-    operator fun minus(v: Point2) = Point2(x - v.x, y - v.y)
-
-    operator fun times(v: Double) = Point2(x * v, y * v)
-}
-
-data class Point3(val x: Double, val y: Double, val z: Double) {
+data class Vector3(val x: Double, val y: Double, val z: Double) {
     constructor(x: Number, y: Number, z: Number) : this(x.toDouble(), y.toDouble(), z.toDouble())
 
-    fun toScreen(width: Int, height: Int) = Point2((x + 1.0) * width / 2, (y + 1.0) * height / 2)
+    fun cross(v: Vector3) = Vector3(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x)
 
-    fun cross(v: Point3) = Point3(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x)
+    fun dot(v: Vector3) = x * v.x + y * v.y + z * v.z
 
-    fun dot(v: Point3) = x * v.x + y * v.y + z * v.z
+    operator fun minus(v: Vector3) = Vector3(x - v.x, y - v.y, z - v.z)
 
-    operator fun minus(v: Point3) = Point3(x - v.x, y - v.y, z - v.z)
-
-    operator fun times(v: Point3) = Point3(x * v.x, y * v.y, z * v.z)
+    operator fun times(v: Vector3) = Vector3(x * v.x, y * v.y, z * v.z)
 
     fun magnitude() = sqrt(x * x + y * y + z * z)
 
-    fun normalise(): Point3 {
+    fun normalise(): Vector3 {
         val l = 1.0 / magnitude()
-        return Point3(x * l, y * l, z * l)
+        return Vector3(x * l, y * l, z * l)
     }
 }
