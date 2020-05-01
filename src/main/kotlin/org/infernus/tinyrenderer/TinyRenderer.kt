@@ -13,12 +13,12 @@ class TinyRenderer(private val width: Int,
 
     private val pixels = IntArray(width * height)
 
-    fun drawLine(x0: Int, y0: Int, x1: Int, y1: Int, colour: Int) {
+    fun drawLine(x0: Int, y0: Int, x1: Int, y1: Int, colour: Colour) {
         var t = 0.0f
         while (t < 1.0) {
             val x = (x0 + (x1 - x0) * t).toInt()
             val y = (y0 + (y1 - y0) * t).toInt()
-            pixels[x + y * width] = colour
+            pixels[x + y * width] = colour.rawValue
             t += .01f
         }
     }
@@ -31,15 +31,15 @@ class TinyRenderer(private val width: Int,
         }
         return image
     }
+}
 
-    companion object {
-        const val COLOUR_WHITE = 0xFFFFFF
-    }
+enum class Colour(val rawValue: Int) {
+    WHITE(0xFFFFFF)
 }
 
 fun main() {
     val renderer = TinyRenderer(100, 100)
-    renderer.drawLine(20, 20, 80, 70, TinyRenderer.COLOUR_WHITE)
+    renderer.drawLine(20, 20, 80, 70, Colour.WHITE)
 
     showImageInFrame(renderer.asBufferedImage())
 }
@@ -49,6 +49,6 @@ private fun showImageInFrame(image: BufferedImage) {
     frame.contentPane.layout = FlowLayout()
     frame.contentPane.add(JLabel(ImageIcon(image)))
     frame.pack()
-    frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE;
+    frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
     frame.isVisible = true
 }
