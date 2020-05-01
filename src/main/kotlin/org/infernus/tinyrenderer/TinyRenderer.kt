@@ -1,6 +1,7 @@
 package org.infernus.tinyrenderer
 
-import org.infernus.tinyrenderer.Colour.*
+import org.infernus.tinyrenderer.Colour.BLACK
+import org.infernus.tinyrenderer.Colour.WHITE
 import org.infernus.tinyrenderer.Origin.*
 import java.awt.FlowLayout
 import java.awt.image.BufferedImage
@@ -18,6 +19,18 @@ class TinyRenderer(private val width: Int,
                    private val origin: Origin = TOP_LEFT) {
 
     private val pixels = IntArray(width * height) { initialColour.rawValue }
+
+    fun drawModel(model: WavefrontObject) {
+        model.faces.forEach { face ->
+            face.lines().forEach { (start, end) ->
+                val startX = (start.x + 1) * width / 2
+                val startY = (start.y + 1) * height / 2
+                val endX = (end.x + 1) * width / 2
+                val endY = (end.y + 1) * height / 2
+                drawLine(startX.toInt(), startY.toInt(), endX.toInt(), endY.toInt(), WHITE)
+            }
+        }
+    }
 
     fun drawLine(fromX: Int, fromY: Int, toX: Int, toY: Int, colour: Colour) {
         val steep = abs(fromX - toX) < abs(fromY - toY)
@@ -107,24 +120,18 @@ enum class Colour(val rawValue: Int) {
 }
 
 fun main() {
-    val width = 512
-    val height = 512
-    val renderer = TinyRenderer(width, height, BLACK, BOTTOM_LEFT)
+    val renderer = TinyRenderer(512, 512, BLACK, BOTTOM_LEFT)
 
-    val model = WavefrontObjectParser().parse(Path.of(TinyRenderer::class.java.getResource("/african_head.obj").toURI()))
-
-    model.faces.forEach { face ->
-        face.lines().forEach { (start, end) ->
-            val startX = (start.x + 1) * width / 2
-            val startY = (start.y + 1) * height / 2
-            val endX = (end.x + 1) * width / 2
-            val endY = (end.y + 1) * height / 2
-            renderer.drawLine(startX.toInt(), startY.toInt(), endX.toInt(), endY.toInt(), WHITE)
-        }
-    }
+    val model = WavefrontObjectParser().parse(ClasspathPath.of("/african_head.obj"))
+    renderer.drawModel(model)
 
     showImageInFrame(renderer.asBufferedImage())
 }
+
+object ClasspathPath {
+    fun of(classpathPath: String): Path = Path.of(ClasspathPath::class.java.getResource(classpathPath).toURI())
+}
+
 
 private fun showImageInFrame(image: BufferedImage) {
     val frame = JFrame()
