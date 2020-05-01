@@ -6,7 +6,7 @@ import org.junit.Test
 import java.nio.file.Path
 import kotlin.test.assertEquals
 
-class WavefrontObjectTest {
+class WavefrontObjectParserTest {
 
     @Test
     fun `it parses the correct numbers of vertices`() {
