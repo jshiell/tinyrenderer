@@ -40,22 +40,16 @@ class Renderer(private val width: Int,
         val totalHeight = vertices[2].y - vertices[0].y
 
         val firstSegmentHeight = vertices[1].y - vertices[0].y + 1
-        for (y in vertices[0].y.toInt()..vertices[1].y.toInt()) {
-            val offset = (y - vertices[0].y).toFloat()
-            val first = vertices[0] + (vertices[2] - vertices[0]) * (offset / totalHeight)
-            val second = vertices[0] + (vertices[1] - vertices[0]) * (offset / firstSegmentHeight)
-            setPixel(first.x.toInt(), y, colour)
-            setPixel(second.x.toInt(), y, colour)
-
-            for (x in (min(first.x, second.x).toInt())..(max(first.x, second.x).toInt())) {
-                setPixel(x, y, colour)
-            }
-        }
-
         val secondSegmentHeight = vertices[2].y - vertices[1].y + 1
-        for (y in (vertices[1].y.toInt() + 1)..vertices[2].y.toInt()) {
-            val first = vertices[0] + (vertices[2] - vertices[0]) * ((y - vertices[0].y).toFloat() / totalHeight)
-            val second = vertices[1] + (vertices[2] - vertices[1]) * ((y - vertices[1].y).toFloat() / secondSegmentHeight)
+
+        for (y in vertices[0].y.toInt()..vertices[2].y.toInt()) {
+            val offsetToTop = (y - vertices[0].y).toFloat()
+            val first = vertices[0] + (vertices[2] - vertices[0]) * (offsetToTop / totalHeight)
+            val second = if (y <= vertices[1].y) {
+                vertices[0] + (vertices[1] - vertices[0]) * (offsetToTop / firstSegmentHeight)
+            } else {
+                vertices[1] + (vertices[2] - vertices[1]) * ((y - vertices[1].y).toFloat() / secondSegmentHeight)
+            }
 
             for (x in (min(first.x, second.x).toInt())..(max(first.x, second.x).toInt())) {
                 setPixel(x, y, colour)
