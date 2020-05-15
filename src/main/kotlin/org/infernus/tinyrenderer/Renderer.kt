@@ -31,14 +31,14 @@ class Renderer(private val width: Int,
             val worldVertex2 = face.vertex2.toVector3()
             val worldVertex3 = face.vertex3.toVector3()
 
-            val screenVertices = Triangle(
-                    (viewport * projection * worldVertex1.toMatrix()).toVector3(),
-                    (viewport * projection * worldVertex2.toMatrix()).toVector3(),
-                    (viewport * projection * worldVertex3.toMatrix()).toVector3())
-
             val normal = (worldVertex3 - worldVertex1).cross(worldVertex2 - worldVertex1).normalise()
             val intensity = normal.dot(lightDirection)
             if (intensity > 0.0) {
+                val screenVertices = Triangle(
+                        (viewport * projection * worldVertex1.toMatrix()).toVector3(),
+                        (viewport * projection * worldVertex2.toMatrix()).toVector3(),
+                        (viewport * projection * worldVertex3.toMatrix()).toVector3())
+
                 renderTriangle(
                         screenVertices,
                         face.textureCoordinates(),
