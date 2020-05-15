@@ -9,11 +9,11 @@ import kotlin.math.max
 import kotlin.math.min
 
 
-class Renderer(private val width: Int,
-               private val height: Int,
-               private val depth: Int,
-               private val initialColour: Colour = BLACK,
-               private val origin: Origin = TOP_LEFT) {
+class TinyGL(private val width: Int,
+             private val height: Int,
+             private val depth: Int,
+             private val initialColour: Colour = BLACK,
+             private val origin: Origin = TOP_LEFT) {
 
     private val pixels = IntArray(width * height) { initialColour.rawValue }
     private val zBuffer = IntArray(width * height) { Integer.MIN_VALUE }
@@ -22,14 +22,14 @@ class Renderer(private val width: Int,
     private var projection: Matrix? = null
     private var viewport: Matrix? = null
 
-    fun projection(coefficient: Double): Renderer {
+    fun projection(coefficient: Double): TinyGL {
         projection = Matrix.identity(4).also {
             it[3, 2] = coefficient
         }
         return this
     }
 
-    fun lookAt(eye: Vector3, centre: Vector3, up: Vector3): Renderer {
+    fun lookAt(eye: Vector3, centre: Vector3, up: Vector3): TinyGL {
         val z = (eye - centre).normalise()
         val x = up.cross(z).normalise()
         val y = z.cross(x).normalise()
@@ -50,7 +50,7 @@ class Renderer(private val width: Int,
         return this
     }
 
-    fun viewport(x: Int, y: Int, width: Int, height: Int): Renderer {
+    fun viewport(x: Int, y: Int, width: Int, height: Int): TinyGL {
         viewport = Matrix.identity(4).also {
             it[0, 3] = x + width / 2.0
             it[1, 3] = y + height / 2.0

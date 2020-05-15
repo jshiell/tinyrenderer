@@ -74,6 +74,6 @@ class WavefrontObjectParserTest {
     }
 
     companion object {
-        private val TEST_FILE = Path.of(Renderer::class.java.getResource("/african_head.obj").toURI())
+        private val TEST_FILE = Path.of(TinyGL::class.java.getResource("/african_head.obj").toURI())
     }
 }

@@ -28,7 +28,7 @@ class App {
         val lightDirection = Vector3(1, -1, 1).normalise()
         val width = 800
         val height = 800
-        val renderer = Renderer(width, height, 255, BLACK, BOTTOM_LEFT)
+        val tinyGL = TinyGL(width, height, 255, BLACK, BOTTOM_LEFT)
                 .lookAt(eye, centre, up)
                 .projection(-1.0 / (eye - centre).magnitude())
                 .viewport(width / 8, height / 8, width * 3 / 4, height * 3 / 4)
@@ -38,7 +38,7 @@ class App {
             val worldVertex2 = face.second.vertex.toVector3()
             val worldVertex3 = face.third.vertex.toVector3()
 
-            renderer.renderTriangle(
+            tinyGL.renderTriangle(
                     Triangle(worldVertex1, worldVertex2, worldVertex3),
                     face.textureCoordinates(),
                     diffuseTexture,
@@ -46,7 +46,7 @@ class App {
         }
 
 
-        return renderer.asBufferedImage()
+        return tinyGL.asBufferedImage()
     }
 
     private fun lightIntensities(lightDirection: Vector3,
