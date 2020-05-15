@@ -11,52 +11,25 @@ import kotlin.math.min
 
 class Renderer(private val width: Int,
                private val height: Int,
-               depth: Int,
+               private val depth: Int,
                private val initialColour: Colour = BLACK,
                private val origin: Origin = TOP_LEFT) {
 
     private val pixels = IntArray(width * height) { initialColour.rawValue }
     private val zBuffer = IntArray(width * height) { Integer.MIN_VALUE }
-    private val viewport = viewport(width / 8, height / 8, width * 3 / 4, height * 3 / 4, depth)
-    private val lightDirection = Vector3(1, -1, 1).normalise()
-    private val eye = Vector3(1, 1,  3)
-    private val centre = Vector3(0, 0, 0)
-    private val projection = Matrix.identity(4).also {
-        it[3, 2] = -1.0 / (eye - centre).magnitude()
-    }
-    private val modelView = lookAt(eye, centre, Vector3(0, 1, 0))
 
-    fun drawModel(model: WavefrontObject, diffuseTexture: BufferedImage) {
-        model.faces.forEach { face ->
-            val worldVertex1 = face.first.vertex.toVector3()
-            val worldVertex2 = face.second.vertex.toVector3()
-            val worldVertex3 = face.third.vertex.toVector3()
+    private var modelView: Matrix? = null
+    private var projection: Matrix? = null
+    private var viewport: Matrix? = null
 
-            val screenVertices = Triangle(
-                    viewport * projection * modelView * worldVertex1,
-                    viewport * projection * modelView * worldVertex2,
-                    viewport * projection * modelView * worldVertex3)
-
-            renderTriangle(
-                    screenVertices,
-                    face.textureCoordinates(),
-                    diffuseTexture,
-                    lightIntensities(face, worldVertex1, worldVertex2, worldVertex3))
+    fun projection(coefficient: Double): Renderer {
+        projection = Matrix.identity(4).also {
+            it[3, 2] = coefficient
         }
+        return this
     }
 
-    private fun lightIntensities(face: Face, worldVertex1: Vector3, worldVertex2: Vector3, worldVertex3: Vector3): Intensities =
-            if (face.first.normal == null || face.second.normal == null || face.third.normal == null) {
-                val intensity = (worldVertex3 - worldVertex1).cross(worldVertex2 - worldVertex1).normalise().dot(lightDirection)
-                Intensities(intensity, intensity, intensity)
-            } else {
-                Intensities(
-                        face.first.normal.toVector3().normalise().dot(lightDirection),
-                        face.second.normal.toVector3().normalise().dot(lightDirection),
-                        face.third.normal.toVector3().normalise().dot(lightDirection))
-            }
-
-    private fun lookAt(eye: Vector3, centre: Vector3, up: Vector3): Matrix {
+    fun lookAt(eye: Vector3, centre: Vector3, up: Vector3): Renderer {
         val z = (eye - centre).normalise()
         val x = up.cross(z).normalise()
         val y = z.cross(x).normalise()
@@ -73,43 +46,47 @@ class Renderer(private val width: Int,
         result[3, 0] = centre.x
         result[3, 1] = centre.y
         result[3, 2] = centre.z
-        return result
+        modelView = result
+        return this
     }
 
-    private fun viewport(x: Int, y: Int, width: Int, height: Int, depth: Int) = Matrix.identity(4).also {
-        it[0, 3] = x + width / 2.0
-        it[1, 3] = y + height / 2.0
-        it[2, 3] = depth / 2.0
+    fun viewport(x: Int, y: Int, width: Int, height: Int): Renderer {
+        viewport = Matrix.identity(4).also {
+            it[0, 3] = x + width / 2.0
+            it[1, 3] = y + height / 2.0
+            it[2, 3] = depth / 2.0
 
-        it[0, 0] = width / 2.0
-        it[1, 1] = height / 2.0
-        it[2, 2] = depth / 2.0
+            it[0, 0] = width / 2.0
+            it[1, 1] = height / 2.0
+            it[2, 2] = depth / 2.0
+        }
+        return this
     }
 
-    private fun Vertex.toVector3() = Vector3(x, y, z)
+    fun renderTriangle(worldTriangle: Triangle,
+                       textureCoordinates: Triangle?,
+                       diffuseTexture: BufferedImage,
+                       lightIntensities: Intensities) {
+        val currentProjection = projection
+        val currentModelView = modelView
+        val currentViewport = viewport
+        if (currentProjection == null || currentModelView == null || currentViewport == null) {
+            throw IllegalStateException("Projection, modelView, and viewport must be configured first")
+        }
 
-    private fun Normal.toVector3() = Vector3(x, y, z)
+        val screenTriangle = Triangle(
+                currentViewport * currentProjection * currentModelView * worldTriangle.vertex1,
+                currentViewport * currentProjection * currentModelView * worldTriangle.vertex2,
+                currentViewport * currentProjection * currentModelView * worldTriangle.vertex3)
 
-    private fun TextureCoordinate.toVector3() = Vector3(x, y, z)
-
-    private fun Face.textureCoordinates() = if (first.textureCoordinate != null && second.textureCoordinate != null && third.textureCoordinate != null) {
-        Triangle(first.textureCoordinate.toVector3(), second.textureCoordinate.toVector3(), third.textureCoordinate.toVector3())
-    } else {
-        null
-    }
-
-    private fun renderTriangle(triangle: Triangle,
-                               textureCoordinates: Triangle?,
-                               diffuseTexture: BufferedImage,
-                               lightIntensities: Intensities) {
-        val bounds = boundingBox(triangle.pointsAsList())
+        val bounds = boundingBox(screenTriangle.pointsAsList())
 
         for (x in (bounds.fromX..bounds.toX)) {
             for (y in (bounds.fromY..bounds.toY)) {
-                val screen = barycentric(triangle, Vector3(x, y, 0))
+                val screen = barycentric(screenTriangle, Vector3(x, y, 0))
                 if (screen.x >= 0 && screen.y >= 0 && screen.z >= 0) {
                     val lightIntensity = lightIntensity(lightIntensities, screen)
-                    val z = (triangle.vertex1.z * screen.x + triangle.vertex2.z * screen.y + triangle.vertex3.z * screen.z).toInt()
+                    val z = (screenTriangle.vertex1.z * screen.x + screenTriangle.vertex2.z * screen.y + screenTriangle.vertex3.z * screen.z).toInt()
                     if (zBuffer[x + y * width] < z) {
                         zBuffer[x + y * width] = z
                         setPixel(x, y, drawColour(textureCoordinates, screen, diffuseTexture, lightIntensity))

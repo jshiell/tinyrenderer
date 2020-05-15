@@ -17,6 +17,8 @@ data class Vector3(val x: Double, val y: Double, val z: Double) {
 
     operator fun times(v: Double) = Vector3(x * v, y * v, z * v)
 
+    operator fun div(v: Double) = Vector3(x / v, y / v, z / v)
+
     fun magnitude() = sqrt(x * x + y * y + z * z)
 
     fun toMatrix(): Matrix = Matrix(4, 1).also {
