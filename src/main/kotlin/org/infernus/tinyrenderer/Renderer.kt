@@ -18,23 +18,24 @@ class Renderer(private val width: Int,
     private val pixels = IntArray(width * height) { initialColour.rawValue }
     private val zBuffer = IntArray(width * height) { Integer.MIN_VALUE }
     private val viewport = viewport(width / 8, height / 8, width * 3 / 4, height * 3 / 4, depth)
-    private val lightDirection = Vector3(1, 1, 1).normalise()
-    private val camera = Vector3(0, 0, 3)
+    private val lightDirection = Vector3(1, -1, 1).normalise()
+    private val eye = Vector3(1, 1,  3)
+    private val centre = Vector3(0, 0, 0)
     private val projection = Matrix.identity(4).also {
-        it[3, 2] = -1.0 / camera.z
+        it[3, 2] = -1.0 / (eye - centre).magnitude()
     }
+    private val modelView = lookAt(eye, centre, Vector3(0, 1, 0))
 
     fun drawModel(model: WavefrontObject, diffuseTexture: BufferedImage) {
-
         model.faces.forEach { face ->
             val worldVertex1 = face.first.vertex.toVector3()
             val worldVertex2 = face.second.vertex.toVector3()
             val worldVertex3 = face.third.vertex.toVector3()
 
             val screenVertices = Triangle(
-                    viewport * projection * worldVertex1,
-                    viewport * projection * worldVertex2,
-                    viewport * projection * worldVertex3)
+                    viewport * projection * modelView * worldVertex1,
+                    viewport * projection * modelView * worldVertex2,
+                    viewport * projection * modelView * worldVertex3)
 
             renderTriangle(
                     screenVertices,
@@ -54,6 +55,26 @@ class Renderer(private val width: Int,
                         face.second.normal.toVector3().normalise().dot(lightDirection),
                         face.third.normal.toVector3().normalise().dot(lightDirection))
             }
+
+    private fun lookAt(eye: Vector3, centre: Vector3, up: Vector3): Matrix {
+        val z = (eye - centre).normalise()
+        val x = up.cross(z).normalise()
+        val y = z.cross(x).normalise()
+        val result = Matrix.identity(4)
+        result[0, 0] = x.x
+        result[0, 1] = x.y
+        result[0, 2] = x.z
+        result[1, 0] = y.x
+        result[1, 1] = y.y
+        result[1, 2] = y.z
+        result[2, 0] = z.x
+        result[2, 1] = z.y
+        result[2, 2] = z.z
+        result[3, 0] = centre.x
+        result[3, 1] = centre.y
+        result[3, 2] = centre.z
+        return result
+    }
 
     private fun viewport(x: Int, y: Int, width: Int, height: Int, depth: Int) = Matrix.identity(4).also {
         it[0, 3] = x + width / 2.0
