@@ -88,23 +88,25 @@ class Renderer(private val width: Int,
                 val screen = barycentric(triangle, Vector3(x, y, 0))
                 if (screen.x >= 0 && screen.y >= 0 && screen.z >= 0) {
                     val lightIntensity = lightIntensity(lightIntensities, screen)
-                    val drawColour = if (textureCoordinates != null) {
-                        val textureVector = (textureCoordinates.vertex1 * screen.x) +
-                                (textureCoordinates.vertex2 * screen.y) +
-                                (textureCoordinates.vertex3 * screen.z)
-                        diffuseTexture.colourAt(textureVector) * lightIntensity
-                    } else {
-                        Colour.WHITE * lightIntensity
-                    }
                     val z = (triangle.vertex1.z * screen.x + triangle.vertex2.z * screen.y + triangle.vertex3.z * screen.z).toInt()
                     if (zBuffer[x + y * width] < z) {
                         zBuffer[x + y * width] = z
-                        setPixel(x, y, drawColour)
+                        setPixel(x, y, drawColour(textureCoordinates, screen, diffuseTexture, lightIntensity))
                     }
                 }
             }
         }
     }
+
+    private fun drawColour(textureCoordinates: Triangle?, screen: Vector3, diffuseTexture: BufferedImage, lightIntensity: Double) =
+            if (textureCoordinates != null) {
+                val textureVector = (textureCoordinates.vertex1 * screen.x) +
+                        (textureCoordinates.vertex2 * screen.y) +
+                        (textureCoordinates.vertex3 * screen.z)
+                diffuseTexture.colourAt(textureVector) * lightIntensity
+            } else {
+                Colour.WHITE * lightIntensity
+            }
 
     private fun lightIntensity(lightIntensities: Intensities, screen: Vector3): Double {
         val lightIntensity = lightIntensities.vertex1 * screen.x +
