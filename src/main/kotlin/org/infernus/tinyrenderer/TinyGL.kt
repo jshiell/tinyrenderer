@@ -64,9 +64,7 @@ class TinyGL(private val width: Int,
     }
 
     fun renderTriangle(worldTriangle: Triangle<Vector4>,
-                       textureCoordinates: Triangle<Vector3>?,
-                       diffuseTexture: BufferedImage,
-                       lightIntensities: Intensities) {
+                       shader: Shader) {
         val currentProjection = projection
         val currentModelView = modelView
         val currentViewport = viewport
@@ -74,10 +72,7 @@ class TinyGL(private val width: Int,
             throw IllegalStateException("Projection, modelView, and viewport must be configured first")
         }
 
-        val screenTriangle = Triangle(
-                (currentViewport * currentProjection * currentModelView * worldTriangle.vertex1).toVector4(),
-                (currentViewport * currentProjection * currentModelView * worldTriangle.vertex2).toVector4(),
-                (currentViewport * currentProjection * currentModelView * worldTriangle.vertex3).toVector4())
+        val screenTriangle = shader.vertex(worldTriangle, currentViewport, currentProjection, currentModelView)
 
         val bounds = boundingBox(screenTriangle.pointsAsList())
 
@@ -87,41 +82,20 @@ class TinyGL(private val width: Int,
                         Triangle(screenTriangle.vertex1, screenTriangle.vertex2, screenTriangle.vertex3),
                         Vector3(x, y, 0))
                 if (screen.x >= 0 && screen.y >= 0 && screen.z >= 0) {
-                    val lightIntensity = lightIntensity(lightIntensities, screen)
                     val z = screenTriangle.vertex1.z * screen.x + screenTriangle.vertex2.z * screen.y + screenTriangle.vertex3.z * screen.z
                     val w = screenTriangle.vertex1.w * screen.x + screenTriangle.vertex2.w * screen.y + screenTriangle.vertex3.w * screen.z
                     val depth = max(0.0, min(depth, z / w + 0.5))
                     if (zBuffer[x + y * width] < depth) {
-                        zBuffer[x + y * width] = depth
-                        setPixel(x, y, drawColour(textureCoordinates, screen, diffuseTexture, lightIntensity))
+                        val fragmentResult = shader.fragment(screen)
+                        if (fragmentResult is FragmentResult.SetColour) {
+                            zBuffer[x + y * width] = depth
+                            setPixel(x, y, fragmentResult.colour)
+                        }
                     }
                 }
             }
         }
     }
-
-    private fun drawColour(textureCoordinates: Triangle<Vector3>?, screen: Vector3, diffuseTexture: BufferedImage, lightIntensity: Double) =
-            if (textureCoordinates != null) {
-                val textureVector = (textureCoordinates.vertex1 * screen.x) +
-                        (textureCoordinates.vertex2 * screen.y) +
-                        (textureCoordinates.vertex3 * screen.z)
-                diffuseTexture.colourAt(textureVector) * lightIntensity
-            } else {
-                Colour.WHITE * lightIntensity
-            }
-
-    private fun lightIntensity(lightIntensities: Intensities, screen: Vector3): Double {
-        val lightIntensity = lightIntensities.vertex1 * screen.x +
-                lightIntensities.vertex2 * screen.y +
-                lightIntensities.vertex3 * screen.z
-        return when {
-            lightIntensity < 0 -> 0.0
-            lightIntensity > 1 -> 1.0
-            else -> lightIntensity
-        }
-    }
-
-    private fun BufferedImage.colourAt(coordinates: Vector3) = Colour(getRGB((coordinates.x * width).toInt(), height - (coordinates.y * height).toInt()))
 
     private fun boundingBox(points: List<Vector4>): Rectangle {
         var minX = width - 1
@@ -184,6 +158,18 @@ class TinyGL(private val width: Int,
         }
         return image
     }
+
+    private data class Rectangle(val fromX: Int, val fromY: Int, val toX: Int, val toY: Int)
+}
+
+interface Shader {
+    fun vertex(triangle: Triangle<Vector4>, viewport: Matrix, projection: Matrix, modelView: Matrix): Triangle<Vector4>
+    fun fragment(vertex: Vector3): FragmentResult
+}
+
+sealed class FragmentResult {
+    object Discard : FragmentResult()
+    data class SetColour(val colour: Colour) : FragmentResult()
 }
 
 enum class Origin {
@@ -210,10 +196,6 @@ class Colour(val rawValue: Int) {
     }
 }
 
-data class Intensities(val vertex1: Double, val vertex2: Double, val vertex3: Double)
-
 data class Triangle<T>(val vertex1: T, val vertex2: T, val vertex3: T) {
     fun pointsAsList(): List<T> = listOf(vertex1, vertex2, vertex3)
 }
-
-data class Rectangle(val fromX: Int, val fromY: Int, val toX: Int, val toY: Int)
