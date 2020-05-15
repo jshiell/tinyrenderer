@@ -15,7 +15,7 @@ import javax.swing.JLabel
 class App {
 
     fun showExample() {
-        val renderer = Renderer(512, 512, BLACK, BOTTOM_LEFT)
+        val renderer = Renderer(800, 800, 255, BLACK, BOTTOM_LEFT)
 
         val model = WavefrontObjectParser().parse(pathOf("/african_head.obj"))
         val modelDiffuseTexture = ImageIO.read(urlOf("/african_head_diffuse.png"))
