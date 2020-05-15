@@ -91,9 +91,7 @@ class WavefrontObjectParser {
     }
 }
 
-data class Vertex(val x: Double, val y: Double, val z: Double, val w: Double = 1.0) {
-    fun toVector3() = Vector3(x, y, z)
-}
+data class Vertex(val x: Double, val y: Double, val z: Double, val w: Double = 1.0)
 
 data class TextureCoordinate(val x: Double, val y: Double, val z: Double)
 

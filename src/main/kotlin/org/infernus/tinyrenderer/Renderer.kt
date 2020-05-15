@@ -27,15 +27,31 @@ class Renderer(private val width: Int,
             val intensity = normal.dot(lightDirection)
             if (intensity > 0) {
                 renderTriangle(
-                        Triangle(face.vertex1.toScreen(), face.vertex2.toScreen(), face.vertex3.toScreen()),
-                        Colour((255 * intensity).toInt(), (255 * intensity).toInt(), (255 * intensity).toInt()))
+                        face.vertices(),
+                        face.textureCoordinates(),
+                        greyAtIntensity(intensity))
             }
         }
     }
 
+    private fun greyAtIntensity(intensity: Double) =
+            Colour((255 * intensity).toInt(), (255 * intensity).toInt(), (255 * intensity).toInt())
+
     private fun Vertex.toScreen(): Vector3 = Vector3((x + 1.0) * width / 2.0, (y + 1.0) * height / 2.0, z)
 
-    private fun renderTriangle(triangle: Triangle, colour: Colour) {
+    private fun Vertex.toVector3() = Vector3(x, y, z)
+
+    private fun TextureCoordinate.toVector3() = Vector3(x, y, z)
+
+    private fun Face.vertices() = Triangle(vertex1.toScreen(), vertex2.toScreen(), vertex3.toScreen())
+
+    private fun Face.textureCoordinates() = if (textureCoordinate1 != null && textureCoordinate2 != null && textureCoordinate3 != null) {
+        Triangle(textureCoordinate1.toVector3(), textureCoordinate2.toVector3(), textureCoordinate3.toVector3())
+    } else {
+        null
+    }
+
+    private fun renderTriangle(triangle: Triangle, textureCoordinates: Triangle?, colour: Colour) {
         val bounds = boundingBox(triangle.pointsAsList())
 
         for (x in (bounds.fromX..bounds.toX)) {
