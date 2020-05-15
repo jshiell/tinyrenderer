@@ -33,3 +33,13 @@ data class Vector3(val x: Double, val y: Double, val z: Double) {
         return Vector3(x * l, y * l, z * l)
     }
 }
+
+data class Vector4(val x: Double, val y: Double, val z: Double, val w: Double) {
+    fun toMatrix(): Matrix = Matrix(4, 1).also {
+        it[0, 0] = x
+        it[1, 0] = y
+        it[2, 0] = z
+        it[3, 0] = w
+    }
+
+}

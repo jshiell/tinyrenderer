@@ -28,21 +28,21 @@ class App {
         val lightDirection = Vector3(1, -1, 1).normalise()
         val width = 800
         val height = 800
-        val tinyGL = TinyGL(width, height, 255, BLACK, BOTTOM_LEFT)
+        val tinyGL = TinyGL(width, height, BLACK, BOTTOM_LEFT)
                 .lookAt(eye, centre, up)
                 .projection(-1.0 / (eye - centre).magnitude())
                 .viewport(width / 8, height / 8, width * 3 / 4, height * 3 / 4)
 
         model.faces.forEach { face ->
-            val worldVertex1 = face.first.vertex.toVector3()
-            val worldVertex2 = face.second.vertex.toVector3()
-            val worldVertex3 = face.third.vertex.toVector3()
+            val worldVertex1 = face.first.vertex.toVector4()
+            val worldVertex2 = face.second.vertex.toVector4()
+            val worldVertex3 = face.third.vertex.toVector4()
 
             tinyGL.renderTriangle(
                     Triangle(worldVertex1, worldVertex2, worldVertex3),
                     face.textureCoordinates(),
                     diffuseTexture,
-                    lightIntensities(lightDirection, face, worldVertex1, worldVertex2, worldVertex3))
+                    lightIntensities(lightDirection, face))
         }
 
 
@@ -50,13 +50,9 @@ class App {
     }
 
     private fun lightIntensities(lightDirection: Vector3,
-                                 face: Face,
-                                 worldVertex1: Vector3,
-                                 worldVertex2: Vector3,
-                                 worldVertex3: Vector3): Intensities =
+                                 face: Face): Intensities =
             if (face.first.normal == null || face.second.normal == null || face.third.normal == null) {
-                val intensity = (worldVertex3 - worldVertex1).cross(worldVertex2 - worldVertex1).normalise().dot(lightDirection)
-                Intensities(intensity, intensity, intensity)
+                Intensities(0.0, 0.0, 0.0)
             } else {
                 Intensities(
                         face.first.normal.toVector3().normalise().dot(lightDirection),
@@ -65,7 +61,7 @@ class App {
             }
 
 
-    private fun Vertex.toVector3() = Vector3(x, y, z)
+    private fun Vertex.toVector4() = Vector4(x, y, z, 1.0)
 
     private fun Normal.toVector3() = Vector3(x, y, z)
 
