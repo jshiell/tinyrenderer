@@ -27,9 +27,9 @@ class Renderer(private val width: Int,
     fun drawModel(model: WavefrontObject, diffuseTexture: BufferedImage) {
 
         model.faces.forEach { face ->
-            val worldVertex1 = face.vertex1.toVector3()
-            val worldVertex2 = face.vertex2.toVector3()
-            val worldVertex3 = face.vertex3.toVector3()
+            val worldVertex1 = face.first.vertex.toVector3()
+            val worldVertex2 = face.second.vertex.toVector3()
+            val worldVertex3 = face.third.vertex.toVector3()
 
             val normal = (worldVertex3 - worldVertex1).cross(worldVertex2 - worldVertex1).normalise()
             val intensity = normal.dot(lightDirection)
@@ -62,8 +62,8 @@ class Renderer(private val width: Int,
 
     private fun TextureCoordinate.toVector3() = Vector3(x, y, z)
 
-    private fun Face.textureCoordinates() = if (textureCoordinate1 != null && textureCoordinate2 != null && textureCoordinate3 != null) {
-        Triangle(textureCoordinate1.toVector3(), textureCoordinate2.toVector3(), textureCoordinate3.toVector3())
+    private fun Face.textureCoordinates() = if (first.textureCoordinate != null && second.textureCoordinate != null && third.textureCoordinate != null) {
+        Triangle(first.textureCoordinate.toVector3(), second.textureCoordinate.toVector3(), third.textureCoordinate.toVector3())
     } else {
         null
     }

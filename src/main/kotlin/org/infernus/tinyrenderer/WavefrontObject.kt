@@ -5,12 +5,14 @@ import java.nio.file.Path
 
 data class WavefrontObject(val vertices: List<Vertex>,
                            val textureCoordinates: List<TextureCoordinate>,
+                           val normals: List<Normal>,
                            val faces: List<Face>)
 
 class WavefrontObjectParser {
 
     private val vertices = mutableListOf<Vertex>()
     private val textureCoordinates = mutableListOf<TextureCoordinate>()
+    private val normals = mutableListOf<Normal>()
     private val faceIndices = mutableListOf<FaceIndices>()
 
     private val parseFunctions = mapOf<Regex, (MatchResult) -> Unit>(
@@ -25,34 +27,18 @@ class WavefrontObjectParser {
                 val (x, y, z) = match.destructured
                 textureCoordinates.add(TextureCoordinate(x.toDouble(), y.toDouble(), z.toDouble()))
             },
+            NORMAL_PATTERN to { match ->
+                val (x, y, z) = match.destructured
+                normals.add(Normal(x.toDouble(), y.toDouble(), z.toDouble()))
+            },
             FACE_PATTERN to { match ->
                 val (face1, face2, face3) = match.destructured
-                val element1 = parseFaceElement(face1)
-                val element2 = parseFaceElement(face2)
-                val element3 = parseFaceElement(face3)
                 faceIndices.add(FaceIndices(
-                        element1.vertexIndex,
-                        element1.textureCoordinateIndex,
-                        element2.vertexIndex,
-                        element2.textureCoordinateIndex,
-                        element3.vertexIndex,
-                element3.textureCoordinateIndex))
+                        VertexIndices.parse(face1),
+                        VertexIndices.parse(face2),
+                        VertexIndices.parse(face3)))
             }
     )
-
-    private fun parseFaceElement(faceElement: String): FaceElement {
-        val (vertexIndex, vertexTextureCoOrdIndex, vertexNormalIndex) = FACE_ELEMENT_PATTERN.find(faceElement)
-                ?.destructured
-                ?: error("Could not parse face element '${faceElement}'")
-
-        return FaceElement(vertexIndex.toInt(), vertexTextureCoOrdIndex.toIntOrNull(), vertexNormalIndex.toIntOrNull())
-    }
-
-    private fun String.toIntOrNull() = try {
-        this.toInt()
-    } catch (_: NumberFormatException) {
-        null
-    }
 
     fun parse(sourceFile: Path): WavefrontObject {
         Files.lines(sourceFile).forEach { line ->
@@ -63,31 +49,46 @@ class WavefrontObjectParser {
 
         return WavefrontObject(vertices,
                 textureCoordinates,
-                faceIndices.map { it.resolve(vertices, textureCoordinates) })
+                normals,
+                faceIndices.map { it.resolve(vertices, textureCoordinates, normals) })
     }
 
-    data class FaceIndices(val vertex1Index: Int,
-                           val textureCoordinate1Index: Int?,
-                           val vertex2Index: Int,
-                           val textureCoordinate2Index: Int?,
-                           val vertex3Index: Int,
-                           val textureCoordinate3Index: Int?) {
-        fun resolve(vertices: List<Vertex>, textureCoordinates: List<TextureCoordinate>): Face = Face(
-                vertices[vertex1Index - 1],
-                textureCoordinate1Index?.let { textureCoordinates[textureCoordinate1Index - 1] },
-                vertices[vertex2Index - 1],
-                textureCoordinate2Index?.let { textureCoordinates[textureCoordinate2Index - 1] },
-                vertices[vertex3Index - 1],
-                textureCoordinate3Index?.let { textureCoordinates[textureCoordinate3Index - 1] })
+    data class VertexIndices(val vertexIndex: Int, val textureCoordinatesIndex: Int?, val normalIndex: Int?) {
+        fun resolve(vertices: List<Vertex>,
+                    textureCoordinates: List<TextureCoordinate>,
+                    normals: List<Normal>) = VertexInformation(
+                vertices[vertexIndex - 1],
+                textureCoordinatesIndex?.let { textureCoordinates[textureCoordinatesIndex - 1] },
+                normalIndex?.let { normals[normalIndex - 1] })
+
+        companion object {
+            internal fun parse(faceElement: String): VertexIndices {
+                val (vertexIndex, vertexTextureCoOrdIndex, vertexNormalIndex) = FACE_ELEMENT_PATTERN.find(faceElement)
+                        ?.destructured
+                        ?: error("Could not parse face element '${faceElement}'")
+
+                return VertexIndices(vertexIndex.toInt(), vertexTextureCoOrdIndex.toIntOrNull(), vertexNormalIndex.toIntOrNull())
+            }
+        }
     }
 
-    data class FaceElement(val vertexIndex: Int, val textureCoordinateIndex: Int?, val vertexNormalIndex: Int?)
+    data class FaceIndices(val vertex1: VertexIndices,
+                           val vertex2: VertexIndices,
+                           val vertex3: VertexIndices) {
+        fun resolve(vertices: List<Vertex>,
+                    textureCoordinates: List<TextureCoordinate>,
+                    normals: List<Normal>): Face = Face(
+                vertex1.resolve(vertices, textureCoordinates, normals),
+                vertex2.resolve(vertices, textureCoordinates, normals),
+                vertex3.resolve(vertices, textureCoordinates, normals))
+    }
 
     companion object {
         private val VERTEX_PATTERN = Regex("^v\\s+([eE\\d.-]+)\\s+([eE\\d.-]+)\\s+([eE\\d.-]+)\\s*([eE\\d.-]+)?\\s*$")
         private val TEXTURE_COORD_PATTERN = Regex("^vt\\s+([\\d.]+)\\s+([\\d.]+)\\s+([\\d.]+)\\s*$")
         private val FACE_PATTERN = Regex("^f\\s+([\\d/]+)\\s+([\\d/]+)\\s+([\\d/]+)\\s*$")
         private val FACE_ELEMENT_PATTERN = Regex("^(\\d+)/?(\\d+)?/?(\\d+)?$")
+        private val NORMAL_PATTERN = Regex("^vn\\s+([\\d.-]+)\\s+([\\d.-]+)\\s+([\\d.-]+)\\s*$")
     }
 }
 
@@ -95,9 +96,8 @@ data class Vertex(val x: Double, val y: Double, val z: Double, val w: Double = 1
 
 data class TextureCoordinate(val x: Double, val y: Double, val z: Double)
 
-data class Face(val vertex1: Vertex,
-                val textureCoordinate1: TextureCoordinate?,
-                val vertex2: Vertex,
-                val textureCoordinate2: TextureCoordinate?,
-                val vertex3: Vertex,
-                val textureCoordinate3: TextureCoordinate?)
+data class Normal(val x: Double, val y: Double, val z: Double)
+
+data class VertexInformation(val vertex: Vertex, val textureCoordinate: TextureCoordinate?, val normal: Normal?)
+
+data class Face(val first: VertexInformation, val second: VertexInformation, val third: VertexInformation)
