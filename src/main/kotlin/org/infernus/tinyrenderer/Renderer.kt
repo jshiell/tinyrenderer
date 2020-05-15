@@ -27,9 +27,7 @@ class Renderer(private val width: Int,
             val intensity = normal.dot(lightDirection)
             if (intensity > 0) {
                 renderTriangle(
-                        face.vertex1.toScreen(),
-                        face.vertex2.toScreen(),
-                        face.vertex3.toScreen(),
+                        Triangle(face.vertex1.toScreen(), face.vertex2.toScreen(), face.vertex3.toScreen()),
                         Colour((255 * intensity).toInt(), (255 * intensity).toInt(), (255 * intensity).toInt()))
             }
         }
@@ -37,14 +35,14 @@ class Renderer(private val width: Int,
 
     private fun Vertex.toScreen(): Vector3 = Vector3((x + 1.0) * width / 2.0, (y + 1.0) * height / 2.0, z)
 
-    private fun renderTriangle(point1: Vector3, point2: Vector3, point3: Vector3, colour: Colour) {
-        val bounds = boundingBox(listOf(point1, point2, point3))
+    private fun renderTriangle(triangle: Triangle, colour: Colour) {
+        val bounds = boundingBox(triangle.pointsAsList())
 
         for (x in (bounds.fromX..bounds.toX)) {
             for (y in (bounds.fromY..bounds.toY)) {
-                val screen = barycentric(point1, point2, point3, Vector3(x, y, 0))
+                val screen = barycentric(triangle, Vector3(x, y, 0))
                 if (screen.x >= 0 && screen.y >= 0 && screen.z >= 0) {
-                    val z = (point1.z * screen.x + point2.z * screen.y + point3.z * screen.x).toInt()
+                    val z = (triangle.firstPoint.z * screen.x + triangle.secondPoint.z * screen.y + triangle.thirdPoint.z * screen.x).toInt()
                     if (zBuffer[x + y * width] < z) {
                         zBuffer[x + y * width] = z
                         setPixel(x, y, colour)
@@ -68,9 +66,13 @@ class Renderer(private val width: Int,
         return Rectangle(minX, minY, maxX, maxY)
     }
 
-    private fun barycentric(point1: Vector3, point2: Vector3, point3: Vector3, testPoint: Vector3): Vector3 {
-        val u = Vector3(point3.x - point1.x, point2.x - point1.x, point1.x - testPoint.x)
-                .cross(Vector3(point3.y - point1.y, point2.y - point1.y, point1.y - testPoint.y))
+    private fun barycentric(triangle: Triangle, testPoint: Vector3): Vector3 {
+        val u = Vector3(triangle.thirdPoint.x - triangle.firstPoint.x,
+                triangle.secondPoint.x - triangle.firstPoint.x,
+                triangle.firstPoint.x - testPoint.x)
+                .cross(Vector3(triangle.thirdPoint.y - triangle.firstPoint.y,
+                        triangle.secondPoint.y - triangle.firstPoint.y,
+                        triangle.firstPoint.y - testPoint.y))
         return if (abs(u.z) > 0.01) {
             Vector3(1.0 - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z)
         } else {
@@ -129,6 +131,10 @@ class Colour(val rawValue: Int) {
     companion object {
         val BLACK = Colour(0x000000)
     }
+}
+
+data class Triangle(val firstPoint: Vector3, val secondPoint: Vector3, val thirdPoint: Vector3) {
+    fun pointsAsList() = listOf(firstPoint, secondPoint, thirdPoint)
 }
 
 data class Rectangle(val fromX: Int, val fromY: Int, val toX: Int, val toY: Int)
