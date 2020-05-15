@@ -42,7 +42,7 @@ class Renderer(private val width: Int,
             for (y in (bounds.fromY..bounds.toY)) {
                 val screen = barycentric(triangle, Vector3(x, y, 0))
                 if (screen.x >= 0 && screen.y >= 0 && screen.z >= 0) {
-                    val z = (triangle.firstPoint.z * screen.x + triangle.secondPoint.z * screen.y + triangle.thirdPoint.z * screen.x).toInt()
+                    val z = (triangle.vertex1.z * screen.x + triangle.vertex2.z * screen.y + triangle.vertex3.z * screen.x).toInt()
                     if (zBuffer[x + y * width] < z) {
                         zBuffer[x + y * width] = z
                         setPixel(x, y, colour)
@@ -67,12 +67,12 @@ class Renderer(private val width: Int,
     }
 
     private fun barycentric(triangle: Triangle, testPoint: Vector3): Vector3 {
-        val u = Vector3(triangle.thirdPoint.x - triangle.firstPoint.x,
-                triangle.secondPoint.x - triangle.firstPoint.x,
-                triangle.firstPoint.x - testPoint.x)
-                .cross(Vector3(triangle.thirdPoint.y - triangle.firstPoint.y,
-                        triangle.secondPoint.y - triangle.firstPoint.y,
-                        triangle.firstPoint.y - testPoint.y))
+        val u = Vector3(triangle.vertex3.x - triangle.vertex1.x,
+                triangle.vertex2.x - triangle.vertex1.x,
+                triangle.vertex1.x - testPoint.x)
+                .cross(Vector3(triangle.vertex3.y - triangle.vertex1.y,
+                        triangle.vertex2.y - triangle.vertex1.y,
+                        triangle.vertex1.y - testPoint.y))
         return if (abs(u.z) > 0.01) {
             Vector3(1.0 - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z)
         } else {
@@ -133,8 +133,8 @@ class Colour(val rawValue: Int) {
     }
 }
 
-data class Triangle(val firstPoint: Vector3, val secondPoint: Vector3, val thirdPoint: Vector3) {
-    fun pointsAsList() = listOf(firstPoint, secondPoint, thirdPoint)
+data class Triangle(val vertex1: Vector3, val vertex2: Vector3, val vertex3: Vector3) {
+    fun pointsAsList() = listOf(vertex1, vertex2, vertex3)
 }
 
 data class Rectangle(val fromX: Int, val fromY: Int, val toX: Int, val toY: Int)
