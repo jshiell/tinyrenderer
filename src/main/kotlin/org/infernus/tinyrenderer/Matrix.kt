@@ -26,6 +26,8 @@ class Matrix(val rows: Int, val columns: Int) {
         return result
     }
 
+    operator fun times(vector3: Vector3) = this * vector3.toMatrix()
+
     fun toVector3() = Vector3(this[0, 0] / this[3, 0], this[1, 0] / this[3, 0], this[2, 0] / this[3, 0])
 
     companion object {

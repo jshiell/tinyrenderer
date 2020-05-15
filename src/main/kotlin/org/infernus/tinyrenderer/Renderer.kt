@@ -11,13 +11,13 @@ import kotlin.math.min
 
 class Renderer(private val width: Int,
                private val height: Int,
-               private val depth: Int,
+               depth: Int,
                private val initialColour: Colour = BLACK,
                private val origin: Origin = TOP_LEFT) {
 
     private val pixels = IntArray(width * height) { initialColour.rawValue }
     private val zBuffer = IntArray(width * height) { Integer.MIN_VALUE }
-    private val viewport = viewport(width / 8, height / 8, width * 3/4, height * 3/4, depth)
+    private val viewport = viewport(width / 8, height / 8, width * 3 / 4, height * 3 / 4, depth)
     private val lightDirection = Vector3(0, 0, -1)
     private val camera = Vector3(0, 0, 3)
     private val projection = Matrix.identity(4).also {
@@ -35,9 +35,9 @@ class Renderer(private val width: Int,
             val intensity = normal.dot(lightDirection)
             if (intensity > 0.0) {
                 val screenVertices = Triangle(
-                        (viewport * projection * worldVertex1.toMatrix()).toVector3(),
-                        (viewport * projection * worldVertex2.toMatrix()).toVector3(),
-                        (viewport * projection * worldVertex3.toMatrix()).toVector3())
+                        viewport * projection * worldVertex1,
+                        viewport * projection * worldVertex2,
+                        viewport * projection * worldVertex3)
 
                 renderTriangle(
                         screenVertices,
@@ -53,7 +53,7 @@ class Renderer(private val width: Int,
         it[1, 3] = y + height / 2.0
         it[2, 3] = depth / 2.0
 
-        it[0 ,0] = width / 2.0
+        it[0, 0] = width / 2.0
         it[1, 1] = height / 2.0
         it[2, 2] = depth / 2.0
     }
@@ -186,6 +186,9 @@ class Colour(val rawValue: Int) {
 }
 
 data class Triangle(val vertex1: Vector3, val vertex2: Vector3, val vertex3: Vector3) {
+
+    constructor(vertex1: Matrix, vertex2: Matrix, vertex3: Matrix) : this(vertex1.toVector3(), vertex2.toVector3(), vertex3.toVector3())
+
     fun pointsAsList() = listOf(vertex1, vertex2, vertex3)
 }
 
