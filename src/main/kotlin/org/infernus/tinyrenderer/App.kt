@@ -4,7 +4,9 @@ import org.infernus.tinyrenderer.Colour.Companion.BLACK
 import org.infernus.tinyrenderer.Origin.BOTTOM_LEFT
 import java.awt.FlowLayout
 import java.awt.image.BufferedImage
+import java.net.URL
 import java.nio.file.Path
+import javax.imageio.ImageIO
 import javax.swing.ImageIcon
 import javax.swing.JFrame
 import javax.swing.JLabel
@@ -16,7 +18,8 @@ class App {
         val renderer = Renderer(512, 512, BLACK, BOTTOM_LEFT)
 
         val model = WavefrontObjectParser().parse(pathOf("/african_head.obj"))
-        renderer.drawModel(model)
+        val modelDiffuseTexture = ImageIO.read(urlOf("/african_head_diffuse.png"))
+        renderer.drawModel(model, modelDiffuseTexture)
 
         showImageInFrame(renderer.asBufferedImage())
     }
@@ -32,6 +35,8 @@ class App {
     }
 
     private fun pathOf(classpathPath: String): Path = Path.of(App::class.java.getResource(classpathPath).toURI())
+
+    private fun urlOf(classpathPath: String): URL = App::class.java.getResource(classpathPath)
 
 }
 

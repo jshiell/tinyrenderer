@@ -18,7 +18,7 @@ class Renderer(private val width: Int,
     private val pixels = IntArray(width * height) { initialColour.rawValue }
     private val zBuffer = IntArray(width * height) { Integer.MIN_VALUE }
 
-    fun drawModel(model: WavefrontObject) {
+    fun drawModel(model: WavefrontObject, diffuseTexture: BufferedImage) {
         val lightDirection = Vector3(0, 0, -1)
         model.faces.forEach { face ->
             val world1 = face.vertex1.toVector3()
@@ -29,13 +29,11 @@ class Renderer(private val width: Int,
                 renderTriangle(
                         face.vertices(),
                         face.textureCoordinates(),
-                        greyAtIntensity(intensity))
+                        diffuseTexture,
+                        intensity)
             }
         }
     }
-
-    private fun greyAtIntensity(intensity: Double) =
-            Colour((255 * intensity).toInt(), (255 * intensity).toInt(), (255 * intensity).toInt())
 
     private fun Vertex.toScreen(): Vector3 = Vector3((x + 1.0) * width / 2.0, (y + 1.0) * height / 2.0, z)
 
@@ -51,22 +49,35 @@ class Renderer(private val width: Int,
         null
     }
 
-    private fun renderTriangle(triangle: Triangle, textureCoordinates: Triangle?, colour: Colour) {
+    private fun renderTriangle(triangle: Triangle,
+                               textureCoordinates: Triangle?,
+                               diffuseTexture: BufferedImage,
+                               lightIntensity: Double) {
         val bounds = boundingBox(triangle.pointsAsList())
 
         for (x in (bounds.fromX..bounds.toX)) {
             for (y in (bounds.fromY..bounds.toY)) {
                 val screen = barycentric(triangle, Vector3(x, y, 0))
                 if (screen.x >= 0 && screen.y >= 0 && screen.z >= 0) {
+                    val drawColour = if (textureCoordinates != null) {
+                        val textureVector = (textureCoordinates.vertex1 * screen.x) +
+                                (textureCoordinates.vertex2 * screen.y) +
+                                (textureCoordinates.vertex3 * screen.z)
+                        diffuseTexture.colourAt(textureVector) * lightIntensity
+                    } else {
+                        Colour.WHITE * lightIntensity
+                    }
                     val z = (triangle.vertex1.z * screen.x + triangle.vertex2.z * screen.y + triangle.vertex3.z * screen.x).toInt()
                     if (zBuffer[x + y * width] < z) {
                         zBuffer[x + y * width] = z
-                        setPixel(x, y, colour)
+                        setPixel(x, y, drawColour)
                     }
                 }
             }
         }
     }
+
+    private fun BufferedImage.colourAt(coordinates: Vector3) = Colour(getRGB((coordinates.x * width).toInt(), height - (coordinates.y * height).toInt()))
 
     private fun boundingBox(points: List<Vector3>): Rectangle {
         var minX = width - 1
@@ -144,8 +155,14 @@ class Colour(val rawValue: Int) {
                     + green.shl(8).and(0xFF00)
                     + blue.and(0xFF))
 
+    operator fun times(intensity: Double) = Colour(
+            (rawValue.and(0xFF0000).shr(16) * intensity).toInt(),
+            (rawValue.and(0xFF00).shr(8) * intensity).toInt(),
+            (rawValue.and(0xFF) * intensity).toInt())
+
     companion object {
         val BLACK = Colour(0x000000)
+        val WHITE = Colour(0xFFFFFF)
     }
 }
 
@@ -162,9 +179,13 @@ data class Vector3(val x: Double, val y: Double, val z: Double) {
 
     fun dot(v: Vector3) = x * v.x + y * v.y + z * v.z
 
+    operator fun plus(v: Vector3) = Vector3(x + v.x, y + v.y, z + v.z)
+
     operator fun minus(v: Vector3) = Vector3(x - v.x, y - v.y, z - v.z)
 
     operator fun times(v: Vector3) = Vector3(x * v.x, y * v.y, z * v.z)
+
+    operator fun times(v: Double) = Vector3(x * v, y * v, z * v)
 
     fun magnitude() = sqrt(x * x + y * y + z * z)
 
