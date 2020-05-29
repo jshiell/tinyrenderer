@@ -16,8 +16,8 @@ import kotlin.math.min
 class App {
 
     fun renderModelFile() {
-        val model = WavefrontObjectParser().parse(pathOf("/african_head.obj"))
-        val modelDiffuseTexture = ImageIO.read(urlOf("/african_head_diffuse.png"))
+        val model = WavefrontObjectParser().parse(pathOf("/african_head/african_head.obj"))
+        val modelDiffuseTexture = ImageIO.read(urlOf("/african_head/african_head_diffuse.png"))
         val image = renderModel(model, modelDiffuseTexture)
         showImageInFrame(image)
     }
