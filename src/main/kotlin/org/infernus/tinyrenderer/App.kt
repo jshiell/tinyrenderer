@@ -16,13 +16,16 @@ import kotlin.math.min
 class App {
 
     fun renderModelFile() {
-        val model = WavefrontObjectParser().parse(pathOf("/african_head/african_head.obj"))
-        val modelDiffuseTexture = ImageIO.read(urlOf("/african_head/african_head_diffuse.png"))
-        val image = renderModel(model, modelDiffuseTexture)
-        showImageInFrame(image)
+        val objectModels = listOf(
+                ObjectModel(WavefrontObjectParser().parse(pathOf("/african_head/african_head.obj")).faces,
+                        ImageIO.read(urlOf("/african_head/african_head_diffuse.png"))),
+                ObjectModel(WavefrontObjectParser().parse(pathOf("/african_head/african_head_eye_inner.obj")).faces,
+                        ImageIO.read(urlOf("/african_head/african_head_eye_inner_diffuse.png"))))
+
+        showImageInFrame(render(objectModels))
     }
 
-    private fun renderModel(model: WavefrontObject, diffuseTexture: BufferedImage): BufferedImage {
+    private fun render(objectModels: List<ObjectModel>): BufferedImage {
         val eye = Vector3(1, 1, 3)
         val centre = Vector3(0, 0, 0)
         val up = Vector3(0, 1, 0)
@@ -34,9 +37,11 @@ class App {
                 .projection(-1.0 / (eye - centre).magnitude())
                 .viewport(width / 8, height / 8, width * 3 / 4, height * 3 / 4)
 
-        model.faces.forEach { face ->
-            val shader = FaceShader(face, lightDirection, diffuseTexture)
-            tinyGL.renderTriangle(face.toTriangle(), shader)
+        objectModels.forEach { model ->
+            model.faces.forEach { face ->
+                val shader = FaceShader(face, lightDirection, model.diffuseTexture)
+                tinyGL.renderTriangle(face.toTriangle(), shader)
+            }
         }
 
         return tinyGL.asBufferedImage()
@@ -57,11 +62,15 @@ class App {
         frame.isVisible = true
     }
 
-    private fun pathOf(classpathPath: String): Path = Path.of(App::class.java.getResource(classpathPath).toURI())
+    private fun pathOf(classpathPath: String): Path = Path.of(
+            App::class.java.getResource(classpathPath)?.toURI() ?: error("Could not read classpath resource $classpathPath"))
 
     private fun urlOf(classpathPath: String): URL = App::class.java.getResource(classpathPath)
+            ?: error("Could not read classpath resource $classpathPath")
 
 }
+
+data class ObjectModel(val faces: List<Face>, val diffuseTexture: BufferedImage)
 
 class FaceShader(private val face: Face,
                  private val lightDirection: Vector3,
