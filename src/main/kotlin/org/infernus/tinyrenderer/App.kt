@@ -17,13 +17,15 @@ class App {
 
     fun renderModelFile() {
         val objectModels = listOf(
-                ObjectModel(WavefrontObjectParser().parse(pathOf("/african_head/african_head.obj")).faces,
-                        ImageIO.read(urlOf("/african_head/african_head_diffuse.png"))),
-                ObjectModel(WavefrontObjectParser().parse(pathOf("/african_head/african_head_eye_inner.obj")).faces,
-                        ImageIO.read(urlOf("/african_head/african_head_eye_inner_diffuse.png"))))
+                readModel("/african_head/african_head"),
+                readModel("/african_head/african_head_eye_inner"))
 
         showImageInFrame(render(objectModels))
     }
+
+    private fun readModel(modelBaseName: String) = ObjectModel(
+            WavefrontObjectParser().parse(pathOf("$modelBaseName.obj")).faces,
+            ImageIO.read(urlOf("${modelBaseName}_diffuse.png")))
 
     private fun render(objectModels: List<ObjectModel>): BufferedImage {
         val eye = Vector3(1, 1, 3)
